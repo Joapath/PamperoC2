@@ -33,6 +33,28 @@ sliver-server-linux.zip
 sliver-server-macos.zip
 sliver-server-windows.zip
 
+# PamperoC2 specific
+/tmp/
+/*.db
+/pampero.db
+/reports/
+/*.pdf
+
+# Node modules
+node_modules/
+package-lock.json
+
+# Build outputs
+dist/
+build/
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
 
 # Binaries for programs and plugins
 *.exe

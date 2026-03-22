@@ -1,46 +1,242 @@
-# Sliver
+# 🇦🇷 PamperoC2 - Sistema de Reportes BCRA con IA
 
-Sliver is an open source cross-platform adversary emulation/red team framework, it can be used by organizations of all sizes to perform security testing. Sliver's implants support C2 over Mutual TLS (mTLS), WireGuard, HTTP(S), and DNS and are dynamically compiled with per-binary asymmetric encryption keys.
+> **Sistema completo de evaluación de seguridad financiera con análisis inteligente impulsado por IA local**
 
-The server and client support MacOS, Windows, and Linux. Implants are supported on MacOS, Windows, and Linux (and possibly every Golang compiler target but we've not tested them all).
+[![Go Version](https://img.shields.io/badge/Go-1.21+-blue.svg)](https://golang.org/)
+[![Vue.js](https://img.shields.io/badge/Vue.js-3.3+-green.svg)](https://vuejs.org/)
+[![Ollama](https://img.shields.io/badge/Ollama-Mistral-orange.svg)](https://ollama.ai/)
+[![License](https://img.shields.io/badge/License-GPLv3-red.svg)](LICENSE)
 
-[![Release](https://github.com/BishopFox/sliver/actions/workflows/autorelease.yml/badge.svg)](https://github.com/BishopFox/sliver/actions/workflows/autorelease.yml) [![Go Report Card](https://goreportcard.com/badge/github.com/BishopFox/sliver)](https://goreportcard.com/report/github.com/BishopFox/sliver) [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
+## 📋 Descripción
 
-Visit [https://sliver.sh/](https://sliver.sh/) for tutorials and documentation.
+PamperoC2 es un sistema integral para la generación automática de reportes de cumplimiento BCRA (Banco Central de la República Argentina) con análisis inteligente de hallazgos de seguridad utilizando IA local. El sistema combina un backend robusto en Go con una interfaz web moderna en Vue.js, ofreciendo una solución completa para evaluaciones de seguridad financiera.
 
-### Features
+## ✨ Características Principales
 
-- Dynamic code generation
-- Compile-time obfuscation
-- Multiplayer-mode
-- Staged and Stageless payloads
-- [Procedurally generated C2](https://sliver.sh/docs?name=HTTPS+C2) over HTTP(S)
-- [DNS canary](https://sliver.sh/docs?name=DNS+C2) blue team detection
-- [Secure C2](https://sliver.sh/docs?name=Transport+Encryption) over mTLS, WireGuard, HTTP(S), and DNS
-- Fully scriptable using [Python](https://github.com/moloch--/sliver-py)
-- Windows process migration, process injection, user token manipulation, etc.
-- Let's Encrypt integration
-- In-memory .NET assembly execution
-- COFF/BOF in-memory loader
-- TCP and named pipe pivots
-- Much more!
+### 🔒 **Módulo de Reportes BCRA**
+- Generación automática de reportes PDF conforme a la normativa A 8398/2026
+- Estructura completa de evaluación de seguridad financiera
+- Matriz de riesgos integrada
+- Sistema de remediaciones y seguimiento
 
-### Getting Started
+### 🤖 **Análisis Inteligente con IA**
+- Integración con Ollama para análisis local de hallazgos
+- Identificación automática de vectores de ataque
+- Generación de comandos técnicos específicos
+- Sistema de prioridades y niveles de confianza
+- Análisis no-bloqueante (funciona sin IA disponible)
 
-Download the latest [release](https://github.com/BishopFox/sliver/releases) and see the Sliver [wiki](https://sliver.sh/docs?name=Getting+Started) for a quick tutorial on basic setup and usage. To get the very latest and greatest compile from source.
+### 🖥️ **Dashboard Web Moderno**
+- Interfaz responsive con Vue.js 3 + Composition API
+- Gestión completa de reportes (CRUD)
+- Visualización de estadísticas en tiempo real
+- Página dedicada para análisis IA vs hallazgos originales
+- Tema profesional con Tailwind CSS
 
-#### Linux One Liner
+### 🏗️ **Arquitectura Robusta**
+- Backend en Go con framework Gin
+- Base de datos SQLite con migraciones automáticas
+- API REST completa con documentación
+- Arquitectura modular y escalable
+- Sistema de logging y manejo de errores
 
-`curl https://sliver.sh/install|sudo bash` and then run `sliver`
+## 🚀 Inicio Rápido
 
-### Help!
+### Prerrequisitos
 
-Please checkout the [wiki](https://sliver.sh/), or start a [GitHub discussion](https://github.com/BishopFox/sliver/discussions).
+- **Go 1.21+** - [Descargar](https://golang.org/dl/)
+- **Node.js 18+** - [Descargar](https://nodejs.org/)
+- **Ollama** - [Instalar](https://ollama.ai/download)
 
-### Compile From Source
+### Instalación
 
-See the [wiki](https://sliver.sh/docs?name=Compile+from+Source).
+1. **Clonar el repositorio**
+   ```bash
+   git clone https://github.com/Joapath/PamperoC2.git
+   cd PamperoC2
+   ```
 
-### License - GPLv3
+2. **Instalar dependencias del backend**
+   ```bash
+   go mod download
+   go mod vendor
+   ```
 
-Sliver is licensed under [GPLv3](https://www.gnu.org/licenses/gpl-3.0.en.html), some sub-components may have separate licenses. See their respective subdirectories in this project for details.
+3. **Instalar dependencias del frontend**
+   ```bash
+   cd ui-dashboard
+   npm install
+   cd ..
+   ```
+
+4. **Configurar Ollama**
+   ```bash
+   ollama pull mistral
+   ```
+
+### Ejecución
+
+1. **Levantar el backend**
+   ```bash
+   cd server/modules/reporting/cmd/api
+   go run main.go -db /tmp/pampero.db -port 3000
+   ```
+
+2. **Levantar el frontend** (en otra terminal)
+   ```bash
+   cd ui-dashboard
+   npm run dev
+   ```
+
+3. **Acceder a la aplicación**
+   - Dashboard: http://localhost:5173
+   - API: http://localhost:3000
+   - Health Check: http://localhost:3000/health
+
+### Demo Automático
+
+```bash
+# Ejecutar demo completo
+./run-demo.sh
+```
+
+## 📁 Estructura del Proyecto
+
+```
+PamperoC2/
+├── server/modules/reporting/     # Backend Go
+│   ├── ai/                       # Servicio Ollama
+│   ├── api/                      # Handlers HTTP y servidor
+│   ├── cmd/api/                  # Punto de entrada
+│   ├── models.go                 # Estructuras de datos
+│   ├── storage/                  # Base de datos SQLite
+│   └── reporting.go              # Lógica de reportes
+├── ui-dashboard/                 # Frontend Vue.js
+│   ├── src/
+│   │   ├── pages/                # Vistas principales
+│   │   ├── stores/               # Estado Pinia
+│   │   └── router/               # Configuración de rutas
+│   └── package.json
+├── docs/                         # Documentación
+├── examples/                     # Ejemplos de uso
+├── Dockerfile                    # Contenedor Docker
+└── run-demo.sh                   # Script de demostración
+```
+
+## 🎯 Funcionalidades
+
+### Reportes BCRA
+- ✅ Generación automática de PDFs
+- ✅ Conformidad con normativa A 8398/2026
+- ✅ Matriz de riesgos integrada
+- ✅ Sistema de hallazgos y remediaciones
+
+### Análisis IA
+- ✅ Integración con Ollama (Mistral)
+- ✅ Análisis local (sin dependencias externas)
+- ✅ Vectores de ataque identificados
+- ✅ Comandos técnicos específicos
+- ✅ Sistema de prioridades y confianza
+
+### Dashboard Web
+- ✅ Interfaz responsive y moderna
+- ✅ Gestión completa de reportes
+- ✅ Estadísticas en tiempo real
+- ✅ Visualización de análisis IA
+- ✅ Tema profesional
+
+## 🔧 API Endpoints
+
+### Reportes
+- `POST /api/v1/reports` - Crear reporte
+- `GET /api/v1/reports` - Listar reportes
+- `GET /api/v1/reports/:id` - Obtener reporte
+- `DELETE /api/v1/reports/:id` - Eliminar reporte
+- `GET /api/v1/reports/:id/download` - Descargar PDF
+
+### Análisis IA
+- `GET /api/v1/reports/:id/ai-analysis` - Obtener análisis IA
+- `POST /api/v1/reports/:id/reanalyze` - Re-analizar con IA
+
+### Estadísticas
+- `GET /api/v1/statistics` - Estadísticas generales
+- `GET /health` - Health check
+
+## 🧪 Testing
+
+```bash
+# Tests del backend
+go test ./server/modules/reporting/...
+
+# Tests del servicio IA
+go test ./server/modules/reporting/ai/...
+
+# Compilación del frontend
+cd ui-dashboard && npm run build
+```
+
+## 🐳 Docker
+
+```bash
+# Construir imagen
+docker build -t pampero-c2 .
+
+# Ejecutar contenedor
+docker run -p 3000:3000 -p 5173:5173 pampero-c2
+```
+
+## 📊 Arquitectura
+
+```
+┌─────────────────┐    ┌──────────────────┐    ┌─────────────────┐
+│   Frontend      │────│   API REST       │────│   Ollama AI     │
+│   Vue.js 3      │    │   Gin Framework  │    │   (Mistral)     │
+│                 │    │                  │    │                 │
+│ • Dashboard     │    │ • Reportes       │    │ • Análisis      │
+│ • Gestión       │    │ • Estadísticas   │    │ • Vectores      │
+│ • Análisis IA   │    │ • IA Analysis    │    │ • Comandos      │
+└─────────────────┘    └──────────────────┘    └─────────────────┘
+         │                       │                       │
+         ▼                       ▼                       ▼
+┌─────────────────┐    ┌──────────────────┐    ┌─────────────────┐
+│   SQLite DB     │    │   PDF Reports    │    │   JSON Analysis │
+│                 │    │                  │    │                 │
+│ • Reportes      │    │ • BCRA Format    │    │ • Attack Vectors│
+│ • Análisis IA   │    │ • Compliance     │    │ • Commands      │
+│ • Estadísticas  │    │ • Downloadable   │    │ • Priority      │
+└─────────────────┘    └──────────────────┘    └─────────────────┘
+```
+
+## 🤝 Contribución
+
+1. Fork el proyecto
+2. Crea una rama para tu feature (`git checkout -b feature/AmazingFeature`)
+3. Commit tus cambios (`git commit -m 'Add some AmazingFeature'`)
+4. Push a la rama (`git push origin feature/AmazingFeature`)
+5. Abre un Pull Request
+
+## 📝 Licencia
+
+Este proyecto está bajo la Licencia GPL v3. Ver el archivo [LICENSE](LICENSE) para más detalles.
+
+## 👥 Autores
+
+- **Equipo PamperoC2** - Desarrollo inicial
+- **Contribuciones** - Ver [CONTRIBUTORS](CONTRIBUTORS.md)
+
+## 🙏 Agradecimientos
+
+- [Bishop Fox](https://bishopfox.com/) - Por el framework Sliver base
+- [Ollama](https://ollama.ai/) - Por el motor de IA local
+- [Vue.js](https://vuejs.org/) - Por el framework frontend
+- [Gin Web Framework](https://gin-gonic.com/) - Por el framework backend
+
+## 📞 Contacto
+
+- **Email**: team@pamperoc2.dev
+- **GitHub**: [Joapath/PamperoC2](https://github.com/Joapath/PamperoC2)
+- **Issues**: [Reportar problema](https://github.com/Joapath/PamperoC2/issues)
+
+---
+
+**🇦🇷 Hecho con ❤️ en Argentina para la seguridad financiera**

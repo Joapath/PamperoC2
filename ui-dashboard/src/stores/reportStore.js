@@ -107,6 +107,39 @@ export const useReportStore = defineStore('report', () => {
     }
   }
 
+  const getAgent = async (agentId) => {
+    try {
+      const response = await apiClient.get(`/agents/${agentId}`)
+      return response.data
+    } catch (err) {
+      error.value = 'Error cargando agente'
+      throw err
+    }
+  }
+
+  const executeAgentAction = async (agentId, action, params = {}) => {
+    try {
+      const response = await apiClient.post(`/agents/${agentId}/actions`, {
+        action,
+        params,
+      })
+      return response.data
+    } catch (err) {
+      error.value = 'Error ejecutando accion agente'
+      throw err
+    }
+  }
+
+  const getJobResults = async (jobId) => {
+    try {
+      const response = await apiClient.get(`/jobs/${jobId}/results`)
+      return response.data.results
+    } catch (err) {
+      error.value = 'Error cargando resultados de job'
+      throw err
+    }
+  }
+
   const reanalyzeFindings = async () => {
     loadingFindings.value = true
     findingsError.value = null
@@ -175,6 +208,9 @@ export const useReportStore = defineStore('report', () => {
     loadFindings,
     reanalyzeFindings,
     createAgentJob,
+    getAgent,
     getAgentJobs,
+    executeAgentAction,
+    getJobResults,
   }
 })

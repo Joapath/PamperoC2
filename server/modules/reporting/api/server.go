@@ -43,10 +43,12 @@ func SetupRouter() *gin.Engine {
 			agents.GET("/:id", GetAgent)
 			agents.POST("/:id/jobs", CreateAgentJob)
 			agents.GET("/:id/jobs", ListAgentJobs)
+			agents.POST("/:id/actions", ExecuteAgentAction)
 		}
 
 		jobs := api.Group("/jobs")
 		{
+			jobs.GET("/:id/results", GetJobResults)
 			jobs.POST("/:id/results", SubmitJobResult)
 		}
 

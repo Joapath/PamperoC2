@@ -43,20 +43,21 @@ type StoredReport struct {
 
 // StoredAgent representa el implant en la DB
 type StoredAgent struct {
-	ID          string    `gorm:"primaryKey" json:"id"`
-	AgentID     string    `json:"agent_id"`
-	Hostname    string    `json:"hostname"`
-	Username    string    `json:"username"`
-	OS          string    `json:"os"`
-	Arch        string    `json:"arch"`
-	Status      string    `json:"status"`
-	Tags        string    `json:"tags"` // comma-separated
-	Zone        string    `json:"zone"`
-	Profile     string    `json:"profile"`
-	BeaconCount int       `json:"beacon_count"`
-	LastSeen    time.Time `json:"last_seen"`
-	CreatedAt   time.Time `json:"created_at"`
-	UpdatedAt   time.Time `json:"updated_at"`
+	ID            string    `gorm:"primaryKey" json:"id"`
+	AgentID       string    `json:"agent_id"`
+	Hostname      string    `json:"hostname"`
+	Username      string    `json:"username"`
+	OS            string    `json:"os"`
+	Arch          string    `json:"arch"`
+	BeaconHeaders string    `json:"beacon_headers"` // JSON encoded
+	Status        string    `json:"status"`
+	Tags          string    `json:"tags"` // comma-separated
+	Zone          string    `json:"zone"`
+	Profile       string    `json:"profile"`
+	BeaconCount   int       `json:"beacon_count"`
+	LastSeen      time.Time `json:"last_seen"`
+	CreatedAt     time.Time `json:"created_at"`
+	UpdatedAt     time.Time `json:"updated_at"`
 }
 
 // StoredJob representa una tarea C2
@@ -162,37 +163,40 @@ func SaveAgent(agent *reporting.Agent) (*StoredAgent, error) {
 	if DB == nil {
 		return nil, fmt.Errorf("base de datos no inicializada")
 	}
+	beaconHeadersJSON, _ := json.Marshal(agent.BeaconHeaders)
 	stored := &StoredAgent{
-		ID:          fmt.Sprintf("agt_%d", time.Now().UnixNano()),
-		AgentID:     agent.AgentID,
-		Hostname:    agent.Hostname,
-		Username:    agent.Username,
-		OS:          agent.OS,
-		Arch:        agent.Arch,
-		Status:      agent.Status,
-		Tags:        strings.Join(agent.Tags, ","),
-		Zone:        agent.Zone,
-		Profile:     agent.Profile,
-		BeaconCount: agent.BeaconCount,
-		LastSeen:    agent.LastSeen,
-		CreatedAt:   time.Now(),
-		UpdatedAt:   time.Now(),
+		ID:            fmt.Sprintf("agt_%d", time.Now().UnixNano()),
+		AgentID:       agent.AgentID,
+		Hostname:      agent.Hostname,
+		Username:      agent.Username,
+		OS:            agent.OS,
+		Arch:          agent.Arch,
+		BeaconHeaders: string(beaconHeadersJSON),
+		Status:        agent.Status,
+		Tags:          strings.Join(agent.Tags, ","),
+		Zone:          agent.Zone,
+		Profile:       agent.Profile,
+		BeaconCount:   agent.BeaconCount,
+		LastSeen:      agent.LastSeen,
+		CreatedAt:     time.Now(),
+		UpdatedAt:     time.Now(),
 	}
 
 	if err := DB.Where("agent_id = ?", agent.AgentID).First(&StoredAgent{}).Error; err == nil {
 		// ya existe -> update
 		if err := DB.Model(&StoredAgent{}).Where("agent_id = ?", agent.AgentID).Updates(map[string]interface{}{
-			"hostname":     agent.Hostname,
-			"username":     agent.Username,
-			"os":           agent.OS,
-			"arch":         agent.Arch,
-			"status":       agent.Status,
-			"tags":         strings.Join(agent.Tags, ","),
-			"zone":         agent.Zone,
-			"profile":      agent.Profile,
-			"beacon_count": agent.BeaconCount,
-			"last_seen":    agent.LastSeen,
-			"updated_at":   time.Now(),
+			"hostname":       agent.Hostname,
+			"username":       agent.Username,
+			"os":             agent.OS,
+			"arch":           agent.Arch,
+			"beacon_headers": string(beaconHeadersJSON),
+			"status":         agent.Status,
+			"tags":           strings.Join(agent.Tags, ","),
+			"zone":           agent.Zone,
+			"profile":        agent.Profile,
+			"beacon_count":   agent.BeaconCount,
+			"last_seen":      agent.LastSeen,
+			"updated_at":     time.Now(),
 		}).Error; err != nil {
 			return nil, err
 		}
@@ -278,6 +282,14 @@ func SaveJobResult(result *reporting.AgentJobResult) (*StoredJobResult, error) {
 		return nil, err
 	}
 	return stored, nil
+}
+
+func GetJobResults(jobID string) ([]StoredJobResult, error) {
+	var results []StoredJobResult
+	if err := DB.Where("job_id = ?", jobID).Find(&results).Error; err != nil {
+		return nil, err
+	}
+	return results, nil
 }
 
 // DeleteReport elimina un reporte

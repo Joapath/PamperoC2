@@ -206,6 +206,14 @@ GIN_MODE=debug                       # (debug|release)
 - Genera PDF automáticamente
 - Guarda en BD
 
+### 4. C2 Agents (Nueva funcionalidad fase 1/2)
+- Tabla de agentes conectados usando beacon
+- Control de estado de sesión en tiempo real (refresh manual)
+- Comandos rápidos de ejemplo: recon-auto, lateral-move, phish-whatsapp, generate-evasion-kaspersky
+- Envío de comandos libre con historial de jobs
+- Resultados de ejecución (stdout/stderr) por job
+- Integración de consola operativa en 1 solo panel
+
 ## 🔐 Seguridad
 
 Implementaciones actuales:

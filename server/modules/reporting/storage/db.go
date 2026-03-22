@@ -3,6 +3,7 @@ package storage
 import (
 	"encoding/json"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/bishopfox/sliver/server/modules/reporting"
@@ -40,6 +41,48 @@ type StoredReport struct {
 	AIModelUsed         string    `json:"ai_model_used"`
 }
 
+// StoredAgent representa el implant en la DB
+type StoredAgent struct {
+	ID          string    `gorm:"primaryKey" json:"id"`
+	AgentID     string    `json:"agent_id"`
+	Hostname    string    `json:"hostname"`
+	Username    string    `json:"username"`
+	OS          string    `json:"os"`
+	Arch        string    `json:"arch"`
+	Status      string    `json:"status"`
+	Tags        string    `json:"tags"` // comma-separated
+	Zone        string    `json:"zone"`
+	Profile     string    `json:"profile"`
+	BeaconCount int       `json:"beacon_count"`
+	LastSeen    time.Time `json:"last_seen"`
+	CreatedAt   time.Time `json:"created_at"`
+	UpdatedAt   time.Time `json:"updated_at"`
+}
+
+// StoredJob representa una tarea C2
+type StoredJob struct {
+	ID         string    `gorm:"primaryKey" json:"id"`
+	AgentID    string    `json:"agent_id"`
+	Command    string    `json:"command"`
+	Args       string    `json:"args"`   // JSON array string
+	Status     string    `json:"status"` // pending,running,done,failed
+	TimeoutSec int       `json:"timeout_sec"`
+	ResultID   string    `json:"result_id"`
+	CreatedAt  time.Time `json:"created_at"`
+	UpdatedAt  time.Time `json:"updated_at"`
+}
+
+// StoredJobResult representa salida de comando
+type StoredJobResult struct {
+	ID        string    `gorm:"primaryKey" json:"id"`
+	JobID     string    `json:"job_id"`
+	AgentID   string    `json:"agent_id"`
+	ExitCode  int       `json:"exit_code"`
+	Stdout    string    `json:"stdout"`
+	Stderr    string    `json:"stderr"`
+	CreatedAt time.Time `json:"created_at"`
+}
+
 var DB *gorm.DB
 
 // Init inicializa la base de datos SQLite
@@ -49,7 +92,7 @@ func Init(dbPath string) error {
 	if err != nil {
 		return fmt.Errorf("falló conectar a BD: %w", err)
 	}
-	err = DB.AutoMigrate(&StoredReport{})
+	err = DB.AutoMigrate(&StoredReport{}, &StoredAgent{}, &StoredJob{}, &StoredJobResult{})
 	if err != nil {
 		return fmt.Errorf("falló migración: %w", err)
 	}
@@ -112,6 +155,129 @@ func ListReports(page, pageSize int) ([]StoredReport, int64, error) {
 	}
 	result = DB.Order("created_at DESC").Offset(offset).Limit(pageSize).Find(&reports)
 	return reports, total, result.Error
+}
+
+// SaveAgent guarda o actualiza información de un agente
+func SaveAgent(agent *reporting.Agent) (*StoredAgent, error) {
+	if DB == nil {
+		return nil, fmt.Errorf("base de datos no inicializada")
+	}
+	stored := &StoredAgent{
+		ID:          fmt.Sprintf("agt_%d", time.Now().UnixNano()),
+		AgentID:     agent.AgentID,
+		Hostname:    agent.Hostname,
+		Username:    agent.Username,
+		OS:          agent.OS,
+		Arch:        agent.Arch,
+		Status:      agent.Status,
+		Tags:        strings.Join(agent.Tags, ","),
+		Zone:        agent.Zone,
+		Profile:     agent.Profile,
+		BeaconCount: agent.BeaconCount,
+		LastSeen:    agent.LastSeen,
+		CreatedAt:   time.Now(),
+		UpdatedAt:   time.Now(),
+	}
+
+	if err := DB.Where("agent_id = ?", agent.AgentID).First(&StoredAgent{}).Error; err == nil {
+		// ya existe -> update
+		if err := DB.Model(&StoredAgent{}).Where("agent_id = ?", agent.AgentID).Updates(map[string]interface{}{
+			"hostname":     agent.Hostname,
+			"username":     agent.Username,
+			"os":           agent.OS,
+			"arch":         agent.Arch,
+			"status":       agent.Status,
+			"tags":         strings.Join(agent.Tags, ","),
+			"zone":         agent.Zone,
+			"profile":      agent.Profile,
+			"beacon_count": agent.BeaconCount,
+			"last_seen":    agent.LastSeen,
+			"updated_at":   time.Now(),
+		}).Error; err != nil {
+			return nil, err
+		}
+		if err := DB.Where("agent_id = ?", agent.AgentID).First(stored).Error; err != nil {
+			return nil, err
+		}
+		return stored, nil
+	}
+
+	// create nuevo
+	if err := DB.Create(stored).Error; err != nil {
+		return nil, err
+	}
+	return stored, nil
+}
+
+func GetAgent(agentID string) (*StoredAgent, error) {
+	var agent StoredAgent
+	if err := DB.First(&agent, "agent_id = ?", agentID).Error; err != nil {
+		return nil, err
+	}
+	return &agent, nil
+}
+
+func ListAgents() ([]StoredAgent, error) {
+	var agents []StoredAgent
+	if err := DB.Order("last_seen desc").Find(&agents).Error; err != nil {
+		return nil, err
+	}
+	return agents, nil
+}
+
+func SaveJob(job *reporting.AgentJob) (*StoredJob, error) {
+	if DB == nil {
+		return nil, fmt.Errorf("base de datos no inicializada")
+	}
+	stored := &StoredJob{
+		ID:         fmt.Sprintf("job_%d", time.Now().UnixNano()),
+		AgentID:    job.AgentID,
+		Command:    job.Command,
+		Args:       strings.Join(job.Args, ","),
+		Status:     "pending",
+		TimeoutSec: job.TimeoutSec,
+		CreatedAt:  time.Now(),
+		UpdatedAt:  time.Now(),
+	}
+	if err := DB.Create(stored).Error; err != nil {
+		return nil, err
+	}
+	return stored, nil
+}
+
+func GetPendingJobs(agentID string) ([]StoredJob, error) {
+	var jobs []StoredJob
+	if err := DB.Where("agent_id = ? AND status = ?", agentID, "pending").Find(&jobs).Error; err != nil {
+		return nil, err
+	}
+	return jobs, nil
+}
+
+func UpdateJobStatus(jobID, status, resultID string) error {
+	return DB.Model(&StoredJob{}).Where("id = ?", jobID).Updates(map[string]interface{}{
+		"status":     status,
+		"result_id":  resultID,
+		"updated_at": time.Now(),
+	}).Error
+}
+
+func SaveJobResult(result *reporting.AgentJobResult) (*StoredJobResult, error) {
+	if DB == nil {
+		return nil, fmt.Errorf("base de datos no inicializada")
+	}
+	stored := &StoredJobResult{
+		ID:        fmt.Sprintf("jr_%d", time.Now().UnixNano()),
+		JobID:     result.JobID,
+		AgentID:   result.AgentID,
+		ExitCode:  result.ExitCode,
+		Stdout:    result.Stdout,
+		Stderr:    result.Stderr,
+		CreatedAt: time.Now(),
+	}
+	if err := DB.Create(stored).Error; err != nil {
+		return nil, err
+	}
+	return stored, nil
 }
 
 // DeleteReport elimina un reporte

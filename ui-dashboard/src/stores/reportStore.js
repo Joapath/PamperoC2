@@ -15,6 +15,12 @@ export const useReportStore = defineStore('report', () => {
   const loading = ref(false)
   const error = ref(null)
 
+  const agents = ref([])
+  const jobs = ref([])
+  const findings = ref([])
+  const loadingFindings = ref(false)
+  const findingsError = ref(null)
+
   const apiClient = axios.create({
     baseURL: '/api/v1',
   })
@@ -77,9 +83,16 @@ export const useReportStore = defineStore('report', () => {
     }
   }
 
-  const findings = ref([])
-  const loadingFindings = ref(false)
-  const findingsError = ref(null)
+  const loadAgents = async () => {
+    try {
+      const response = await apiClient.get('/agents')
+      agents.value = response.data.agents
+      return agents.value
+    } catch (err) {
+      error.value = 'Error cargando agentes'
+      throw err
+    }
+  }
 
   const loadFindings = async () => {
     loadingFindings.value = true
@@ -105,5 +118,63 @@ export const useReportStore = defineStore('report', () => {
     } finally {
       loadingFindings.value = false
     }
+  }
+
+  const createAgentJob = async (agentId, command, args = [], timeoutSec = 300) => {
+    try {
+      const response = await apiClient.post(`/agents/${agentId}/jobs`, {
+        command,
+        args,
+        timeout_sec: timeoutSec,
+      })
+      return response.data
+    } catch (err) {
+      error.value = 'Error creando job'
+      throw err
+    }
+  }
+
+  const getAgentJobs = async (agentId) => {
+    try {
+      const response = await apiClient.get(`/agents/${agentId}/jobs`)
+      jobs.value = response.data.jobs
+      return jobs.value
+    } catch (err) {
+      error.value = 'Error cargando jobs del agente'
+      throw err
+    }
+  }
+
+  const deleteReport = async (reportId) => {
+    try {
+      await apiClient.delete(`/reports/${reportId}`)
+      reports.value = reports.value.filter(r => r.id !== reportId)
+      await loadStatistics()
+    } catch (err) {
+      error.value = 'Error eliminando reporte'
+      throw err
+    }
+  }
+
+  return {
+    reports,
+    statistics,
+    agents,
+    jobs,
+    findings,
+    loading,
+    error,
+    loadingFindings,
+    findingsError,
+    loadReports,
+    loadStatistics,
+    generateReport,
+    downloadReport,
+    deleteReport,
+    loadAgents,
+    loadFindings,
+    reanalyzeFindings,
+    createAgentJob,
+    getAgentJobs,
   }
 })

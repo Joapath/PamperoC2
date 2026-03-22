@@ -35,6 +35,21 @@ func SetupRouter() *gin.Engine {
 			reports.GET("/:id/ai-analysis", GetAIAnalysis)
 			reports.POST("/:id/reanalyze", ReanalyzeReport)
 		}
+
+		agents := api.Group("/agents")
+		{
+			agents.POST("/beacon", BeaconAgent)
+			agents.GET("", ListAgents)
+			agents.GET("/:id", GetAgent)
+			agents.POST("/:id/jobs", CreateAgentJob)
+			agents.GET("/:id/jobs", ListAgentJobs)
+		}
+
+		jobs := api.Group("/jobs")
+		{
+			jobs.POST("/:id/results", SubmitJobResult)
+		}
+
 		api.GET("/statistics", GetStatistics)
 	}
 	return router

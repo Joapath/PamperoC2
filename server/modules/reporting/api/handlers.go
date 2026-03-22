@@ -185,6 +185,30 @@ func DeleteReport(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "reporte eliminado"})
 }
 
+type AgentBeaconRequest struct {
+	AgentID  string   `json:"agent_id" binding:"required"`
+	Hostname string   `json:"hostname" binding:"required"`
+	Username string   `json:"username"`
+	OS       string   `json:"os"`
+	Arch     string   `json:"arch"`
+	Tags     []string `json:"tags"`
+	Zone     string   `json:"zone"`
+	Profile  string   `json:"profile"`
+	Status   string   `json:"status"`
+}
+
+type AgentJobRequest struct {
+	Command    string   `json:"command" binding:"required"`
+	Args       []string `json:"args"`
+	TimeoutSec int      `json:"timeout_sec"`
+}
+
+type AgentJobResultRequest struct {
+	ExitCode int    `json:"exit_code"`
+	Stdout   string `json:"stdout"`
+	Stderr   string `json:"stderr"`
+}
+
 func GetStatistics(c *gin.Context) {
 	stats, err := storage.GetStatistics()
 	if err != nil {
@@ -192,6 +216,127 @@ func GetStatistics(c *gin.Context) {
 		return
 	}
 	c.JSON(http.StatusOK, stats)
+}
+
+func BeaconAgent(c *gin.Context) {
+	var req AgentBeaconRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	agent := &reporting.Agent{
+		AgentID:     req.AgentID,
+		Hostname:    req.Hostname,
+		Username:    req.Username,
+		OS:          req.OS,
+		Arch:        req.Arch,
+		Status:      req.Status,
+		Tags:        req.Tags,
+		Zone:        req.Zone,
+		Profile:     req.Profile,
+		BeaconCount: 1,
+		LastSeen:    time.Now(),
+	}
+
+	stored, err := storage.SaveAgent(agent)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	jobs, _ := storage.GetPendingJobs(stored.AgentID)
+
+	c.JSON(http.StatusOK, gin.H{"status": "ok", "pending_jobs": jobs})
+}
+
+func ListAgents(c *gin.Context) {
+	agents, err := storage.ListAgents()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"agents": agents})
+}
+
+func GetAgent(c *gin.Context) {
+	agentID := c.Param("id")
+	agent, err := storage.GetAgent(agentID)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "agent not found"})
+		return
+	}
+	c.JSON(http.StatusOK, agent)
+}
+
+func CreateAgentJob(c *gin.Context) {
+	agentID := c.Param("id")
+	var req AgentJobRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	if _, err := storage.GetAgent(agentID); err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "agent not found"})
+		return
+	}
+
+	job := &reporting.AgentJob{
+		AgentID:    agentID,
+		Command:    req.Command,
+		Args:       req.Args,
+		TimeoutSec: req.TimeoutSec,
+	}
+	stored, err := storage.SaveJob(job)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, stored)
+}
+
+func ListAgentJobs(c *gin.Context) {
+	agentID := c.Param("id")
+	jobs, err := storage.GetPendingJobs(agentID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"jobs": jobs})
+}
+
+func SubmitJobResult(c *gin.Context) {
+	jobID := c.Param("id")
+	var req AgentJobResultRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	job := &reporting.AgentJobResult{
+		JobID:    jobID,
+		AgentID:  c.Query("agent_id"),
+		ExitCode: req.ExitCode,
+		Stdout:   req.Stdout,
+		Stderr:   req.Stderr,
+	}
+
+	storedResult, err := storage.SaveJobResult(job)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	if err := storage.UpdateJobStatus(jobID, "done", storedResult.ID); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	// Loop for BCRA event embedding (starting point)
+	// TODO: map job output to report findings insights
+
+	c.JSON(http.StatusOK, gin.H{"result": storedResult})
 }
 
 func Health(c *gin.Context) {

@@ -12,7 +12,9 @@
         <nav class="flex gap-6">
           <router-link to="/" class="text-gray-600 hover:text-gray-900 font-medium">Dashboard</router-link>
           <router-link to="/reportes" class="text-gray-600 hover:text-gray-900 font-medium">Reportes</router-link>
+          <router-link to="/agents" class="text-gray-600 hover:text-gray-900 font-medium">Agents</router-link>
           <router-link to="/crear" class="text-gray-600 hover:text-gray-900 font-medium">Crear</router-link>
+          <router-link to="/analisis" class="text-gray-600 hover:text-gray-900 font-medium">Analisis</router-link>
         </nav>
       </div>
     </header>

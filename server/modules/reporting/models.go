@@ -75,6 +75,46 @@ type BCRAReport struct {
 	LowFindings         int
 }
 
+// Agent representa un implant conectado al C2
+type Agent struct {
+	ID          string    `json:"id"`
+	AgentID     string    `json:"agent_id"`
+	Hostname    string    `json:"hostname"`
+	Username    string    `json:"username"`
+	OS          string    `json:"os"`
+	Arch        string    `json:"arch"`
+	LastSeen    time.Time `json:"last_seen"`
+	Status      string    `json:"status"`
+	Tags        []string  `json:"tags"`
+	Zone        string    `json:"zone"`
+	Profile     string    `json:"profile"`
+	BeaconCount int       `json:"beacon_count"`
+}
+
+// AgentJob representa una orden a ejecutar en un agente
+type AgentJob struct {
+	ID         string    `json:"id"`
+	AgentID    string    `json:"agent_id"`
+	Command    string    `json:"command"`
+	Args       []string  `json:"args"`
+	Status     string    `json:"status"` // pending,running,done,failed
+	CreatedAt  time.Time `json:"created_at"`
+	UpdatedAt  time.Time `json:"updated_at"`
+	TimeoutSec int       `json:"timeout_sec"`
+	ResultID   string    `json:"result_id"`
+}
+
+// AgentJobResult representa salida de una job
+type AgentJobResult struct {
+	ID        string    `json:"id"`
+	JobID     string    `json:"job_id"`
+	AgentID   string    `json:"agent_id"`
+	ExitCode  int       `json:"exit_code"`
+	Stdout    string    `json:"stdout"`
+	Stderr    string    `json:"stderr"`
+	CreatedAt time.Time `json:"created_at"`
+}
+
 // CalculateStats calcula estadísticas del reporte
 func (r *BCRAReport) CalculateStats() {
 	r.CriticalFindings = 0

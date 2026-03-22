@@ -3,6 +3,7 @@ import Dashboard from '../pages/Dashboard.vue'
 import Reportes from '../pages/Reportes.vue'
 import Crear from '../pages/Crear.vue'
 import Analisis from '../pages/Analisis.vue'
+import Agents from '../pages/Agents.vue'
 
 const routes = [
   {
@@ -19,6 +20,11 @@ const routes = [
     path: '/crear',
     name: 'Crear',
     component: Crear,
+  },
+  {
+    path: '/agents',
+    name: 'Agents',
+    component: Agents,
   },
   {
     path: '/analisis',
